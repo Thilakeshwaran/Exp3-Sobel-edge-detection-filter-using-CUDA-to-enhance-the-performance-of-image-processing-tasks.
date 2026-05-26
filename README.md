@@ -1,9 +1,8 @@
 # Exp3-Sobel-edge-detection-filter-using-CUDA-to-enhance-the-performance-of-image-processing-tasks.
-<h3>AIM:</h3>
-<h3>ENTER YOUR NAME</h3>
-<h3>ENTER YOUR REGISTER NO</h3>
-<h3>EX. NO</h3>
-<h3>DATE</h3>
+<h3>NAME : Thilakeswaran KP</h3>
+<h3>REGISTER NO : 212223230232</h3>
+<h3>EX. NO : 3</h3>
+<h3>DATE : 24/05/2026</h3>
 <h1> <align=center> Sobel edge detection filter using CUDA </h3>
   Implement Sobel edge detection filtern using GPU.</h3>
 Experiment Details:
@@ -18,43 +17,98 @@ Google Colab with NVCC Compiler
 CUDA Toolkit and OpenCV installed.
 A sample image for testing.
 
-## PROCEDURE:
-Tasks: 
-a. Modify the Kernel:
+## Technologies Used
 
-Update the kernel to handle color images by converting them to grayscale before applying the Sobel filter.
-Implement boundary checks to avoid reading out of bounds for pixels on the image edges.
+- CUDA Toolkit
+- OpenCV with CUDA support
+- C++
+- NVIDIA GPU
 
-b. Performance Analysis:
+---
 
-Measure the performance (execution time) of the Sobel filter with different image sizes (e.g., 256x256, 512x512, 1024x1024).
-Analyze how the block size (e.g., 8x8, 16x16, 32x32) affects the execution time and output quality.
+## Project Structure
 
-c. Comparison:
+```text
+CUDA-GPU-Image-Processing/
+│
+├── input_images/
+├── output_images/
+├── main.cpp
+├── Makefile
+├── run.sh
+├── README.md
+└── execution_log.txt
+```
 
-Compare the output of your CUDA Sobel filter with a CPU-based Sobel filter implemented using OpenCV.
-Discuss the differences in execution time and output quality.
+---
+## CUDA Image Processing Code 
+```
+#include <opencv2/opencv.hpp>
+#include <opencv2/cudaimgproc.hpp>
+#include <opencv2/cudaarithm.hpp>
+#include <opencv2/cudafilters.hpp>
 
-## PROGRAM:
-TYPE YOUR CODE HERE
+#include <filesystem>
+#include <iostream>
 
-## OUTPUT:
-SHOW YOUR OUTPUT HERE
+namespace fs = std::filesystem;
 
-## RESULT:
-Thus the program has been executed by using CUDA to ________________.
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        std::cout << "Usage: ./image_processor <input_folder> <output_folder>" << std::endl;
+        return -1;
+    }
 
-Questions:
+    std::string input_folder = argv[1];
+    std::string output_folder = argv[2];
 
-What challenges did you face while implementing the Sobel filter for color images?
-How did changing the block size influence the performance of your CUDA implementation?
-What were the differences in output between the CUDA and CPU implementations? Discuss any discrepancies.
-Suggest potential optimizations for improving the performance of the Sobel filter.
+    for (const auto& entry : fs::directory_iterator(input_folder)) {
+        std::string image_path = entry.path().string();
 
-Deliverables:
+        cv::Mat image = cv::imread(image_path);
 
-Modified CUDA code with comments explaining your changes.
-A report summarizing your findings, including graphs of execution times and a comparison of outputs.
-Answers to the questions posed in the experiment.
-Tools Required:
+        if (image.empty()) {
+            std::cout << "Failed to load image: " << image_path << std::endl;
+            continue;
+        }
 
+        cv::cuda::GpuMat gpu_input;
+        gpu_input.upload(image);
+
+        cv::cuda::GpuMat gpu_gray;
+        cv::cuda::cvtColor(gpu_input, gpu_gray, cv::COLOR_BGR2GRAY);
+
+        cv::Ptr<cv::cuda::Filter> gaussian_filter =
+            cv::cuda::createGaussianFilter(
+                gpu_gray.type(),
+                gpu_gray.type(),
+                cv::Size(5, 5),
+                1.5);
+
+        cv::cuda::GpuMat gpu_blur;
+        gaussian_filter->apply(gpu_gray, gpu_blur);
+
+        cv::cuda::GpuMat gpu_edges;
+        cv::cuda::Canny(gpu_blur, gpu_edges, 50.0, 150.0);
+
+        cv::Mat result;
+        gpu_edges.download(result);
+
+        std::string output_path = output_folder + "/processed_" +
+                                  entry.path().filename().string();
+
+        cv::imwrite(output_path, result);
+
+        std::cout << "Processed: " << image_path << std::endl;
+    }
+
+    std::cout << "All images processed successfully." << std::endl;
+
+    return 0;
+}
+```
+## OUTPUT
+<img width="1402" height="1122" alt="output" src="https://github.com/user-attachments/assets/2a502919-cb81-4854-8772-8091f817dda2" />
+
+## RESULT
+The project successfully demonstrates GPU accelerated batch image processing using CUDA and OpenCV. The implementation shows how parallel GPU computation can efficiently process large-scale image datasets.
